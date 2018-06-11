@@ -1,0 +1,19 @@
+version: '3'
+
+services:
+  portainer:
+    image: portainer/portainer
+    ports:
+      - 9000:9000
+    networks:
+      - internal-network
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+
+networks:
+  internal-network:
+    external: true
+ 

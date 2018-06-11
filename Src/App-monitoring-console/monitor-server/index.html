@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html ng-app="app.monitor">
+<head>
+<title>Microservice cluster dashboard</title>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.6/angular.min.js"></script>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<link rel=StyleSheet HREF="css/table.css" TYPE="text/css" MEDIA=screen>
+</head>
+
+<script type="text/javascript">
+	function check_green(){
+		$.ajax({
+			type: 'HEAD',
+			url: 'http://192.168.99.100:82/hello',
+			success: function(){
+				update_tables("visible");
+			},
+			error: function(){
+				update_tables("hidden");
+			}
+		});
+	}
+	
+	function update_tables(action){
+		var elements = document.getElementsByClassName("var_table");
+		for(var i=0; i<elements.length; i++) {
+			elements[i].style.visibility = action;
+		}
+	}
+</script>
+
+<body>
+  <form name="myForm">
+    <table>
+      <thead>
+        <tr>
+         <th>
+          <label for="singleSelect">Select cluster</label></th> 
+        <tr>
+      </thead>
+      <tr>
+       <td ng-controller="EnvironmentsSelectController"> 
+           <select name="singleSelect" 
+                   data-ng-model="selectedOption" 
+                   data-ng-options="o.name for o in options"
+                   ng-change="update()">
+           </select>
+       </td>
+      </tr>
+     </table>
+
+    <div ng-controller="MyController">
+	
+	  <!-- Si se elimina el div la aplicacion no funciona -->
+      <div style="display:none">
+        <table class="var_table" id="mytable">
+         <thead>
+           <tr>
+             <th colspan="6" align="center" width="100%">Microservice dashboard</th>
+           </tr>
+         </thead>
+         <tr>
+            <td colspan="3" align="center" style="font-size:90%">Message: {{result.data.msg}}</td>
+         </tr> 
+         <tr >
+            <td>Date</td>
+            <td class="thicker">{{ result.data.date }} </td>
+	    <td>Hostname</td>
+            <td class="thicker">{{ result.data.hostname }} </td>
+	    <td >Service</td>
+            <td>{{ result.data.svc }}</td>
+         </tr>
+        </table>
+      </div>
+
+      <div class="var_table" style="display:block">
+		<table style="background:none" width="95%">
+		<tr><td width="50%">
+		   <table id="mytable">
+				<thead>
+					<tr>
+						<th>Date</th>
+						<th>Service</th>
+						<th>Hostname</th>
+						<th>Model</th>
+						<th>Request Server</th>
+					</tr>
+				</thead>
+				<tr ng-repeat="hostname in array">
+					<td>{{ result.data.date }}</td>
+					<td style="background-color:{{ result.data.svc }};opacity:0.7"></td>
+					<td>{{ hostname }}</td>
+					<td>{{ result.data.model }}</td>
+					<td ng-if="hostname == result.data.hostname "><img style="margin:0px;border:0px;padding:0px" width="25px" height="25px" src="images/this.png"/></td>
+					<td ng-if="hostname != result.data.hostname"></td> 
+				</tr>
+			</table>
+		</td>
+		<td width="50%">
+			<div>	
+				<img height="100%" width="100%" src="{{ result.data.image }}"/>
+			</div>
+		</td></tr>
+      </table>
+     </div>
+  </form>
+
+	<script type="text/javascript">
+	  var monitor = angular.module('app.monitor', []);
+	  function changeCol(color) {
+		 var doc = document.getElementById("mytable").getElementsByTagName("td")[6].style.background = "light"+color 
+	  }
+	  changeCol("#f0f3f5")
+	  monitor.service('SharingService',function(){
+		var selectedValue = 'http://192.168.99.100/hello';
+
+		this.setValue = function(value){ selectedValue = value; return value;};
+		this.getValue = function(){ return selectedValue;};
+	  });
+
+	  monitor.controller('MyController', function($scope, pollingService, $interval) {
+
+		$scope.data = pollingService.data;
+		$scope.array = []
+		var svc = "white"
+		var stop = $interval(function() {
+			pollingService.poller().then(function(result) {
+				console.log('ok');
+				$scope.result = result;
+				if ($scope.array.indexOf(result.data.hostname) < 0) {
+				  if (result.data.svc != svc) {
+					$scope.array = []
+					svc = result.data.svc
+			changeCol(svc)
+				  }
+				  $scope.array.push(result.data.hostname)
+				}
+				console.log("BBB")
+				console.log($scope.array)
+			})
+		}, 1000);
+	  })
+
+	  monitor.controller('EnvironmentsSelectController', function($scope, $http, $timeout, SharingService) {
+		$scope.options = [{ name: "Production Cluster", value: "http://192.168.99.100/hello", id: 1 }, 
+						   { name: "Blue Cluster", value: "http://192.168.99.100:81/hello", id: 2 },
+						   { name: "Green Cluster", value: "http://192.168.99.100:82/hello", id: 3}];
+		$scope.selectedOption = $scope.options[0];
+		document.body.background='red';
+		$scope.update = function() {
+			SharingService.setValue($scope.selectedOption.value);
+			if ( $scope.selectedOption.id == 3 ){
+				check_green();
+			}else{
+				update_tables("visible");
+			}
+		    
+		};
+
+	  });
+
+	  monitor.service("pollingService", function($http, $timeout, $rootScope, $q, SharingService) {
+
+		var data = { resp: {} };
+		var count = 0;
+		var myArray = []
+		var counter = 1
+		var poller = function() {
+			count++;
+			//$scope.url = SharingService.getValue();
+			return $q(function(resolve, reject) {
+				$http.get(SharingService.getValue()).then(function(result) {
+					console.log(result)
+					resolve(result);
+				});
+			})
+		};
+
+		var getArray = function(){ return myArray }
+		this.cleanArray = function() { myArray = []}
+
+		return {
+			poller: poller
+		};
+	});
+
+	</script>
+</body>
+</html>
