@@ -11,7 +11,7 @@
 	function check_green(){
 		$.ajax({
 			type: 'HEAD',
-			url: 'http://192.168.99.100:82/hello',
+			url: 'http://localhost:82/hello',
 			success: function(){
 				update_tables("visible");
 			},
@@ -112,7 +112,7 @@
 	  }
 	  changeCol("#f0f3f5")
 	  monitor.service('SharingService',function(){
-		var selectedValue = 'http://192.168.99.100/hello';
+		var selectedValue = 'http://localhost/hello';
 
 		this.setValue = function(value){ selectedValue = value; return value;};
 		this.getValue = function(){ return selectedValue;};
@@ -142,9 +142,9 @@
 	  })
 
 	  monitor.controller('EnvironmentsSelectController', function($scope, $http, $timeout, SharingService) {
-		$scope.options = [{ name: "Production Cluster", value: "http://192.168.99.100/hello", id: 1 }, 
-						   { name: "Blue Cluster", value: "http://192.168.99.100:81/hello", id: 2 },
-						   { name: "Green Cluster", value: "http://192.168.99.100:82/hello", id: 3}];
+		$scope.options = [{ name: "Production Cluster", value: "http://localhost/hello", id: 1 }, 
+						   { name: "Blue Cluster", value: "http://localhost:81/hello", id: 2 },
+						   { name: "Green Cluster", value: "http://localhost:82/hello", id: 3}];
 		$scope.selectedOption = $scope.options[0];
 		document.body.background='red';
 		$scope.update = function() {

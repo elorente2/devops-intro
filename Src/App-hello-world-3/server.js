@@ -22,9 +22,9 @@ app.use(function(req, res, next) {
 router.get('/hello', function (req, res) {
     res.json(
     	{
-		msg: "hello World! ",
-		model: kawa_model,
-		image: kawa_image,
+		msg: "hello World v2! ",
+		model: ferrari_model,
+		image: ferrari_image,
 		date: date.getFullYear()+":"+(date.getMonth()+1)+":"+date.getDate(),
 		hostname: process.env.HOSTNAME,
 		svc: process.env.DOCKER_SERVICE_NAME
